@@ -2,11 +2,26 @@ import matplotlib
 matplotlib.use('Agg')  # Use the 'Agg' backend for non-GUI rendering
 
 from flask import Flask, send_file, request
+from sklearn.preprocessing import LabelEncoder
 from io import BytesIO
 import matplotlib.pyplot as plt
+import seaborn as sns
 import duckdb
 import numpy as np
+import pandas as pd
 from random import randint
+
+# ==================================
+# GRÁFICOS TODO
+# =================================
+# > (barras) Quantidade de acidentes por ocupação (CBO)
+# > (barras) Quantidade de acidentes por faixa-etaria
+# > (pizza)  Quantidade de acidentes que resultaram em obito/não-obito
+# > (pizza)  Quantidade de acidentes por sexo
+# > (pizza)  Quantidade de acidentes urgentes/não-urgentes
+# > (pontos) Quantidade de acidentes temporal
+# > (pontos) Modelo preditivo na quantidade de acidentes temporal
+# > Tabela de correlação
 
 con = duckdb.connect('database.db')
 # print(con.sql('SHOW TABLES'))
@@ -31,7 +46,6 @@ def random_colors(n):
 
     return list(zip(r, g, b))
 
-
 @app.route('/')
 def hello_world():
     return '<p>Hello, World!</p>'
@@ -48,6 +62,42 @@ def cities_api():
     ]
 
     return { key: value for key, value in cities }
+
+@app.route('/cor-mat')
+def correlation_matrix_heatmap_api():
+    df = con.execute('SELECT * FROM fato_pars').df()
+
+    # Columns that are not numeric
+    categorical_cols = df.select_dtypes(include=['object']).columns
+
+    # Convert them to numeric
+    label_encoders = {}
+    for col in categorical_cols:
+        le = LabelEncoder()
+        df[col] = le.fit_transform(df[col])
+        label_encoders[col] = le # Save the encoding to reverse later
+
+    # Clear NULLs
+    drop_columns = [
+        'pa_incout', 'pa_incurg', 'pa_tippre', 'pa_subfin', 'pa_docorig', 
+        'pa_motsai', 'pa_obito', 'pa_encerr', 'pa_perman', 'pa_alta', 'pa_transf',
+        'pa_cidsec', 'pa_cidcas', 'pa_dif_val', 'pa_fler', 'pa_vl_cf'
+    ]
+    df = df.drop(columns=drop_columns) 
+
+    # corr = df[df.columns[:10]].corr()
+    corr = df.corr()
+
+    # Mask to get only one half of the heatmap
+    mask = np.triu(np.ones_like(corr, dtype=bool))
+
+    # Draw heatmap
+    plt.figure(figsize=(30,18)) # (22, 16)
+    heatmap = sns.heatmap(corr, vmin=-1, vmax=1, fmt='.2f', 
+        mask=mask, annot=True, cmap='BrBG')
+    heatmap.set_title('Matriz de Correlação', fontdict={'fontsize':10}, pad=12)
+    
+    return send_plot()
 
 # http://localhost/graficos/tipo-acidente?var=quantidade?city=430010?tempo=semestre?tempo-ini=202103?tempo-fim=202208
 #
