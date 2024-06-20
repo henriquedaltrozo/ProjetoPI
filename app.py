@@ -65,6 +65,7 @@ def cities_api():
 
 @app.route('/cor-mat')
 def correlation_matrix_heatmap_api():
+    # df = con.execute('SELECT * FROM fato_pars').df()
     df = con.execute('SELECT * FROM fato_pars').df()
 
     # Columns that are not numeric
@@ -83,6 +84,15 @@ def correlation_matrix_heatmap_api():
         'pa_motsai', 'pa_obito', 'pa_encerr', 'pa_perman', 'pa_alta', 'pa_transf',
         'pa_cidsec', 'pa_cidcas', 'pa_dif_val', 'pa_fler', 'pa_vl_cf'
     ]
+    # drop_columns = [
+        # 'uti_mes_an', 'uti_int_in', 'uti_int_al', 'val_acomp', 'val_sangue',
+        # 'val_transp', 'val_ped1ac', 'rubrica', 'num_proc', 'tot_pt_sp', 'instru',
+        # 'contracep1', 'gestrisco', 'seq_aih5', 'gestor_dt', 'cid_asso', 'val_sh_ges',
+        # 'diagsec9', 'tpdisec8', 'uti_mes_in', 'uti_mes_al', 'val_sadt', 'val_rn', 
+        # 'val_ortp', 'val_sadtsr', 'val_obsang', 'diag_secun', 'destao', 'cpf_aut',
+        # 'num_filhos', 'cid_notif', 'contracep2', 'insc_pn', 'infehosp', 'cid_morte',
+        # 'val_sp_ges', 'diagsec8', 'tpdisec9', 'uti_int_an'
+    # ]
     df = df.drop(columns=drop_columns) 
 
     # corr = df[df.columns[:10]].corr()

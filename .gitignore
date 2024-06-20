@@ -1,5 +1,6 @@
 venv
 __pycache__
+SQL-RDRS
 
 *.db
 database.zip
