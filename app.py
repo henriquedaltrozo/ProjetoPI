@@ -3,6 +3,7 @@ matplotlib.use('Agg')  # Use the 'Agg' backend for non-GUI rendering
 
 from flask import Flask, send_file, request
 from sklearn.preprocessing import LabelEncoder
+from sklearn.linear_model import LinearRegression
 from io import BytesIO
 import matplotlib.pyplot as plt
 import seaborn as sns
@@ -14,14 +15,30 @@ from random import randint
 # ==================================
 # GRÁFICOS TODO
 # =================================
+# > XXX (barras) Quantidade de acidentes por tipo
+#                http://localhost:5000/graficos/tipo-acidente
+#
 # > (barras) Quantidade de acidentes por ocupação (CBO)
+#                http://localhost:5000/graficos/ocupacao
+#
 # > (barras) Quantidade de acidentes por faixa-etaria
-# > (pizza)  Quantidade de acidentes que resultaram em obito/não-obito
+#                http://localhost:5000/graficos/faixa-etaria
+#
 # > (pizza)  Quantidade de acidentes por sexo
-# > (pizza)  Quantidade de acidentes urgentes/não-urgentes
+#                http://localhost:5000/graficos/sexo
+#
 # > (pontos) Quantidade de acidentes temporal
+#                http://localhost:5000/graficos/temporal
+#
 # > (pontos) Modelo preditivo na quantidade de acidentes temporal
-# > Tabela de correlação
+#                http://localhost:5000/predicoes/temporal
+#
+# > (tabela) Com porcentagens de meta indicando se a região escolhida está
+#            acima ou abaixo da média proporcional de outra região e tals
+#                http://localhost:5000/tabelas/comparacao
+#
+# > (tabela) Tabela de correlação
+#                http://localhost:5000/tabelas/correlacao
 
 con = duckdb.connect('database.db')
 # print(con.sql('SHOW TABLES'))
@@ -46,6 +63,80 @@ def random_colors(n):
 
     return list(zip(r, g, b))
 
+def extract_request_params():
+    var_type = request.args.get('tipo-var')
+    var_type = var_type if var_type != None else 'quantidade'
+
+    top = request.args.get('top')
+    top = top if top != None else 5
+
+    loc_type = request.args.get('tipo-localizacao')
+    loc_type = loc_type if loc_type != None else 'estado'
+
+    loc = request.args.get('localizacao')
+    loc = loc if loc != None else '431020' # Default to Ijui
+
+    return var_type, top, loc_type, loc
+
+def get_loc_sql(loc_type, loc):
+    loc_sql = '' # Estado
+    if loc_type == 'cidade':
+        loc_sql = f'WHERE pa_munpcn = {loc}'
+    elif loc_type == 'microregiao':
+        loc_sql = f'JOIN dim_localizacao ON mun_id = pa_munpcn WHERE mic_id = {loc}'
+
+    return loc_sql
+
+def get_qtd_val_sql(var_type):
+    return 'SUM(pa_valapr)' if var_type == 'valor' else 'COUNT(pa_qtdapr)'
+
+def build_plot_title():
+    return 'TODO'
+
+def custom_bar_plot_statement(ax, top, statement):
+    # var_type, top, loc_type, loc = params
+
+    # df = duckdb.sql(statement).df()
+    con.execute(statement)
+
+    result = con.fetchall()
+    unzipped = list(zip(*result))
+    x = [f'{str(i + 1)}°' for i in range(int(top))]
+    y = list(unzipped[1])
+
+    ax.bar(x, y, color=random_colors(int(top)), label=list(unzipped[0]))
+
+def custom_bar_plot(ax, params, dim, x, group_by=None, join_inside=False):
+    var_type, top, loc_type, loc = params
+
+    loc_sql = get_loc_sql(loc_type, loc)
+    qtd_val_sql = get_qtd_val_sql(var_type)
+
+    if group_by == None:
+        group_by = x
+
+    join_outside_sql = f'JOIN {dim[0]} ON {dim[1]} = {x}'
+    join_inside_sql = ''
+    if join_inside:
+        join_inside_sql = join_outside_sql
+        join_outside_sql = ''
+
+    statement = f'''
+    SELECT {dim[2]} AS x, apr 
+    FROM (
+        SELECT {group_by}, {qtd_val_sql} AS apr 
+        FROM fato_pars 
+        {join_inside_sql}
+        {loc_sql}
+        GROUP BY {group_by}
+    ) 
+    {join_outside_sql}
+    ORDER BY apr DESC 
+    LIMIT {top}
+    '''
+    
+    custom_bar_plot_statement(ax, top, statement)
+
 @app.route('/')
 def hello_world():
     return '<p>Hello, World!</p>'
@@ -63,7 +154,7 @@ def cities_api():
 
     return { key: value for key, value in cities }
 
-@app.route('/cor-mat')
+@app.route('/tabelas/correlacao')
 def correlation_matrix_heatmap_api():
     # df = con.execute('SELECT * FROM fato_pars').df()
     df = con.execute('SELECT * FROM fato_pars').df()
@@ -84,15 +175,6 @@ def correlation_matrix_heatmap_api():
         'pa_motsai', 'pa_obito', 'pa_encerr', 'pa_perman', 'pa_alta', 'pa_transf',
         'pa_cidsec', 'pa_cidcas', 'pa_dif_val', 'pa_fler', 'pa_vl_cf'
     ]
-    # drop_columns = [
-        # 'uti_mes_an', 'uti_int_in', 'uti_int_al', 'val_acomp', 'val_sangue',
-        # 'val_transp', 'val_ped1ac', 'rubrica', 'num_proc', 'tot_pt_sp', 'instru',
-        # 'contracep1', 'gestrisco', 'seq_aih5', 'gestor_dt', 'cid_asso', 'val_sh_ges',
-        # 'diagsec9', 'tpdisec8', 'uti_mes_in', 'uti_mes_al', 'val_sadt', 'val_rn', 
-        # 'val_ortp', 'val_sadtsr', 'val_obsang', 'diag_secun', 'destao', 'cpf_aut',
-        # 'num_filhos', 'cid_notif', 'contracep2', 'insc_pn', 'infehosp', 'cid_morte',
-        # 'val_sp_ges', 'diagsec8', 'tpdisec9', 'uti_int_an'
-    # ]
     df = df.drop(columns=drop_columns) 
 
     # corr = df[df.columns[:10]].corr()
@@ -124,71 +206,73 @@ def correlation_matrix_heatmap_api():
 #
 @app.route('/graficos/tipo-acidente')
 def graphs_accident_type_api():
-    var_type = request.args.get('tipo-var')
-    var_type = var_type if var_type != None else 'quantidade'
-
-    top = request.args.get('top')
-    top = top if top != None else 5
-
-    loc_type = request.args.get('tipo-localizacao')
-    loc_type = loc_type if loc_type != None else 'estado'
-
-    # loc = str(None)
-    # if loc_type != 'estado':
-    loc = request.args.get('localizacao')
-    loc = loc if loc != None else '431020' # Default to Ijui
-
-    # statement = '''
-    # SELECT nome AS cid, ocorr 
-    # FROM (
-    #     SELECT pa_cidpri, COUNT(*) AS ocorr 
-    #     FROM fato_pars 
-    #     GROUP BY pa_cidpri
-    # ) 
-    # JOIN dim_cid ON id = pa_cidpri 
-    # ORDER BY ocorr DESC 
-    # LIMIT 5
-    # '''
-
-    loc_str = '' # Estado
-    if loc_type == 'cidade':
-        loc_str = 'WHERE pa_munpcn = ?'
-    elif loc_type == 'microregiao':
-        loc_str = 'JOIN dim_localizacao ON mun_id = pa_munpcn WHERE mic_id = ?'
-
-    # TODO: Make function to generate dynamic statement
-    statement = '''
-    SELECT nome AS cid, apr 
-    FROM (
-        SELECT pa_cidpri, {} AS apr 
-        FROM fato_pars 
-        {}
-        GROUP BY pa_cidpri
-    ) 
-    JOIN dim_cid ON id = pa_cidpri 
-    ORDER BY apr DESC 
-    LIMIT ?
-    '''.format(
-        'SUM(pa_valapr)' if var_type == 'valor' else 'COUNT(pa_qtdapr)',
-        loc_str
-    )
-
-    # df = duckdb.sql(statement).df()
-    con.execute(statement, [top] if loc_type == 'estado' else [loc, top])
-
     fig, ax = plt.subplots()
 
-    result = con.fetchall()
-    unzipped = list(zip(*result))
-    x = [f'{str(i + 1)}°' for i in range(int(top))]
-    y = list(unzipped[1])
+    params = extract_request_params()
+    dim_cid = ('dim_cid', 'id', 'nome')
+    custom_bar_plot(ax, params, dim_cid, 'pa_cidpri')
 
-    ax.bar(x, y, color=random_colors(int(top)), label=list(unzipped[0]))
-
-    # TODO: Make generic to var_type and loc
     ax.set_ylabel('Número de Atendimentos')
-    ax.set_title(f'{top} Principais Atendimentos por\nCategoria de Acidente na Cidade de {loc}')
+    ax.set_title(f'''
+    {params[1]} Principais Atendimentos por
+    Categoria de Acidente na Cidade de {params[3]}''')
     ax.legend(title='Categorias de Acidente')
 
     return send_plot()
 
+@app.route('/graficos/ocupacao')
+def graphs_ocupation_api():
+    fig, ax = plt.subplots()
+
+    params = extract_request_params()
+    dim_ocupacao = ('dim_ocupacao', 'id', 'nome')
+    custom_bar_plot(ax, params, dim_ocupacao, 'pa_cbocod')
+
+    ax.set_ylabel('Número de Atendimentos')
+    ax.set_title(f'''
+    Principais Profissionais da Saúde por Ocupação no
+    Atendimento de Acidentes na Cidade de {params[3]}''')
+    ax.legend(title='Ocupação')
+
+    return send_plot()
+
+@app.route('/graficos/faixa-etaria')
+def graphs_age_api():
+    fig, ax = plt.subplots()
+
+    params = extract_request_params()
+    dim_idade = ('dim_idade', 'idade', 'faixa_etaria')
+    custom_bar_plot(ax, params, dim_idade, 'pa_idade', 'faixa_etaria', True)
+
+    ax.set_ylabel('Número de Atendimentos')
+    ax.set_title(f'''
+    Quantidade de Acidentes de Trânsito por 
+    Faixa-Etária na Cidade de {params[3]}''')
+    ax.legend(title='Faixa-etária')
+
+    return send_plot()
+
+@app.route('/predicao/acidentes')
+def predict_accidents():
+    statement = '''
+    SELECT ano, COUNT(*) AS total_acidentes 
+    FROM fato_pars 
+    JOIN dim_tempo ON pa_cmp = id 
+    GROUP BY ano 
+    ORDER BY ano
+    '''
+    df = con.execute(statement).df()
+    X = df[['ano']]
+    y = df['total_acidentes']
+    model = LinearRegression()
+    model.fit(X, y)
+    future_years = pd.DataFrame({'ano': range(X['ano'].max() + 1, X['ano'].max() + 6)})
+    predictions = model.predict(future_years)
+    plt.figure(figsize=(10, 6))
+    plt.plot(df['ano'], df['total_acidentes'], label='Dados Reais', marker='o')
+    plt.plot(future_years['ano'], predictions, label='Previsões', linestyle='--', marker='x')
+    plt.xlabel('Ano')
+    plt.ylabel('Número de Acidentes')
+    plt.title('Previsão de Acidentes Futuros')
+    plt.legend()
+    return send_plot()
