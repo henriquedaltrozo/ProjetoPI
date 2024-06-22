@@ -63,9 +63,9 @@ DROP VIEW IF EXISTS dim_localizacao;
 CREATE VIEW dim_localizacao AS
 SELECT
     mun.codigo    AS mun_id,
-    mun.descr[7:] AS mun_nome,
-    (SELECT codigo FROM rs_municip WHERE descr[7:] = mic.descr[6:]) AS mic_id,
-    mic.descr[6:] AS mic_nome
+    mun.descr[8:] AS mun_nome,
+    (SELECT codigo FROM rs_municip WHERE descr[8:] = mic.descr[7:]) AS mic_id,
+    mic.descr[7:] AS mic_nome
 FROM 
     rs_municip mun
 JOIN 

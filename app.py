@@ -18,10 +18,10 @@ from random import randint
 # > XXX (barras) Quantidade de acidentes por tipo
 #                http://localhost:5000/graficos/tipo-acidente
 #
-# > (barras) Quantidade de acidentes por ocupação (CBO)
+# > XXX (barras) Quantidade de acidentes por ocupação (CBO)
 #                http://localhost:5000/graficos/ocupacao
 #
-# > (barras) Quantidade de acidentes por faixa-etaria
+# > XXX (barras) Quantidade de acidentes por faixa-etaria
 #                http://localhost:5000/graficos/faixa-etaria
 #
 # > (pizza)  Quantidade de acidentes por sexo
