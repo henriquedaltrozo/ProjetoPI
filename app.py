@@ -24,7 +24,7 @@ from random import randint
 # > XXX (barras) Quantidade de acidentes por faixa-etaria
 #                http://localhost:5000/graficos/faixa-etaria
 #
-# > (pizza)  Quantidade de acidentes por sexo
+# > XXX (pizza)  Quantidade de acidentes por sexo
 #                http://localhost:5000/graficos/sexo
 #
 # > (pontos) Quantidade de acidentes temporal
@@ -78,20 +78,51 @@ def extract_request_params():
 
     return var_type, top, loc_type, loc
 
+city_names = {}
+def get_city_name(loc):
+    global city_names
+
+    # If city_names is empty, populate it from the database
+    if (not city_names):
+        con.execute('SELECT mun_id, mun_nome FROM dim_localizacao')
+        city_names = { str(id): name.title() for id, name in con.fetchall() }
+
+    return city_names[loc]
+
+def build_plot_title(params, topic):
+    var_type, top, loc_type, loc = params
+
+    city_name = get_city_name(loc)
+
+    loc_str_ = ''
+    if loc_type == 'cidade':
+        loc_str = f'na Cidade de {city_name} - RS'
+    elif loc_type == 'microrregiao':
+        loc_str = f'na Microrregião de {city_name} - RS'
+    elif loc_type == 'estado':
+        loc_str = f'no Estado do Rio Grande do Sul'
+
+    title = f'''
+    Quantidade de Atendimentos Relacionados a Acidentes
+    de Trânsito por {topic} {loc_str}'''
+
+    return title
+
+# def build_plot_sql_statement(params, ???):
+
 def get_loc_sql(loc_type, loc):
     loc_sql = '' # Estado
     if loc_type == 'cidade':
         loc_sql = f'WHERE pa_munpcn = {loc}'
-    elif loc_type == 'microregiao':
+    elif loc_type == 'microrregiao':
         loc_sql = f'JOIN dim_localizacao ON mun_id = pa_munpcn WHERE mic_id = {loc}'
 
     return loc_sql
 
+# def get_loc_text(loc_type, loc):
+
 def get_qtd_val_sql(var_type):
     return 'SUM(pa_valapr)' if var_type == 'valor' else 'COUNT(pa_qtdapr)'
-
-def build_plot_title():
-    return 'TODO'
 
 def custom_bar_plot_statement(ax, top, statement):
     # var_type, top, loc_type, loc = params
@@ -197,7 +228,7 @@ def correlation_matrix_heatmap_api():
 #
 # ?top=5
 #
-# ?tipo-localizacao=cidade/microregiao/estado
+# ?tipo-localizacao=cidade/microrregiao/estado
 # ?localizacao=430010
 #
 # ?tipo-tempo=mes/semestre/ano
@@ -213,9 +244,7 @@ def graphs_accident_type_api():
     custom_bar_plot(ax, params, dim_cid, 'pa_cidpri')
 
     ax.set_ylabel('Número de Atendimentos')
-    ax.set_title(f'''
-    {params[1]} Principais Atendimentos por
-    Categoria de Acidente na Cidade de {params[3]}''')
+    ax.set_title(build_plot_title(params, 'Categoria de Acidente'))
     ax.legend(title='Categorias de Acidente')
 
     return send_plot()
@@ -229,9 +258,7 @@ def graphs_ocupation_api():
     custom_bar_plot(ax, params, dim_ocupacao, 'pa_cbocod')
 
     ax.set_ylabel('Número de Atendimentos')
-    ax.set_title(f'''
-    Principais Profissionais da Saúde por Ocupação no
-    Atendimento de Acidentes na Cidade de {params[3]}''')
+    ax.set_title(build_plot_title(params, 'Ocupação do Profissional da Saúde'))
     ax.legend(title='Ocupação')
 
     return send_plot()
@@ -245,10 +272,45 @@ def graphs_age_api():
     custom_bar_plot(ax, params, dim_idade, 'pa_idade', 'faixa_etaria', True)
 
     ax.set_ylabel('Número de Atendimentos')
-    ax.set_title(f'''
-    Quantidade de Acidentes de Trânsito por 
-    Faixa-Etária na Cidade de {params[3]}''')
+    ax.set_title(build_plot_title(params, 'Faixa-Etária'))
     ax.legend(title='Faixa-etária')
+
+    return send_plot()
+
+@app.route('/graficos/sexo')
+def graphs_sex_api():
+    fig, ax = plt.subplots()
+
+    params = extract_request_params()
+    var_type, top, loc_type, loc = params
+
+    loc_sql = get_loc_sql(loc_type, loc)
+    qtd_val_sql = get_qtd_val_sql(var_type)
+
+    statement = f'''
+    SELECT pa_sexo, {qtd_val_sql} AS apr 
+    FROM fato_pars 
+    {loc_sql}
+    GROUP BY pa_sexo
+    ORDER BY apr DESC 
+    LIMIT {top}
+    '''
+    
+    con.execute(statement)
+
+    result = con.fetchall()
+    unzipped = list(zip(*result))
+    x = ['Masculino', 'Feminino']
+    y = list(unzipped[1])
+
+    wedges, texts, autotexts = ax.pie(y, 
+        autopct=lambda val: f'{val:.1f}%', 
+        colors=['cornflowerblue', 'hotpink'],
+        textprops=dict(color="w"))
+
+    ax.set_xlabel('Porcentagem de Atendimentos')
+    ax.set_title(build_plot_title(params, 'Sexo'))
+    ax.legend(wedges, x, title="Sexo")
 
     return send_plot()
 
