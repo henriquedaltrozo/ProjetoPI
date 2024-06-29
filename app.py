@@ -1,6 +1,4 @@
 import matplotlib
-matplotlib.use('Agg')  # Use the 'Agg' backend for non-GUI rendering
-
 from flask import Flask, send_file, request
 from sklearn.preprocessing import LabelEncoder
 from sklearn.linear_model import LinearRegression
@@ -40,18 +38,22 @@ from random import randint
 # > (tabela) Tabela de correlação
 #                http://localhost:5000/tabelas/correlacao
 
-con = duckdb.connect('database.db')
+# con = duckdb.connect('database.db')
 # print(con.sql('SHOW TABLES'))
+
+matplotlib.use('Agg')  # Use the 'Agg' backend for non-GUI rendering
 
 app = Flask(__name__)
 
 # con.close()
 
-def send_plot():
+def send_plot(fig):
     # Save it to a BytesIO object
     buf = BytesIO()
-    plt.savefig(buf, format='png')
+    fig.savefig(buf, format='png')
     buf.seek(0)
+
+    plt.close(fig)
 
     # Return the plot as a response
     return send_file(buf, mimetype='image/png')
@@ -79,7 +81,7 @@ def extract_request_params():
     return var_type, top, loc_type, loc
 
 city_names = {}
-def get_city_name(loc):
+def get_city_name(con, loc):
     global city_names
 
     # If city_names is empty, populate it from the database
@@ -89,12 +91,12 @@ def get_city_name(loc):
 
     return city_names[loc]
 
-def build_plot_title(params, topic):
+def build_plot_title(con, params, topic):
     var_type, top, loc_type, loc = params
 
-    city_name = get_city_name(loc)
+    city_name = get_city_name(con, loc)
 
-    loc_str_ = ''
+    loc_str = ''
     if loc_type == 'cidade':
         loc_str = f'na Cidade de {city_name} - RS'
     elif loc_type == 'microrregiao':
@@ -124,7 +126,7 @@ def get_loc_sql(loc_type, loc):
 def get_qtd_val_sql(var_type):
     return 'SUM(pa_valapr)' if var_type == 'valor' else 'COUNT(pa_qtdapr)'
 
-def custom_bar_plot_statement(ax, top, statement):
+def custom_bar_plot_statement(con, ax, top, statement):
     # var_type, top, loc_type, loc = params
 
     # df = duckdb.sql(statement).df()
@@ -137,7 +139,7 @@ def custom_bar_plot_statement(ax, top, statement):
 
     ax.bar(x, y, color=random_colors(int(top)), label=list(unzipped[0]))
 
-def custom_bar_plot(ax, params, dim, x, group_by=None, join_inside=False):
+def custom_bar_plot(con, ax, params, dim, x, group_by=None, join_inside=False):
     var_type, top, loc_type, loc = params
 
     loc_sql = get_loc_sql(loc_type, loc)
@@ -166,7 +168,7 @@ def custom_bar_plot(ax, params, dim, x, group_by=None, join_inside=False):
     LIMIT {top}
     '''
     
-    custom_bar_plot_statement(ax, top, statement)
+    custom_bar_plot_statement(con, ax, top, statement)
 
 @app.route('/')
 def hello_world():
@@ -174,6 +176,8 @@ def hello_world():
 
 @app.route('/cities')
 def cities_api():
+    con = duckdb.connect('database.db')
+
     con.execute('SELECT codigo, descr FROM rs_municip')
     cities = con.fetchall()
 
@@ -187,7 +191,8 @@ def cities_api():
 
 @app.route('/tabelas/correlacao')
 def correlation_matrix_heatmap_api():
-    # df = con.execute('SELECT * FROM fato_pars').df()
+    con = duckdb.connect('database.db')
+
     df = con.execute('SELECT * FROM fato_pars').df()
 
     # Columns that are not numeric
@@ -214,13 +219,15 @@ def correlation_matrix_heatmap_api():
     # Mask to get only one half of the heatmap
     mask = np.triu(np.ones_like(corr, dtype=bool))
 
+    fig, ax = plt.subplots(figsize=(30,18))
+
     # Draw heatmap
-    plt.figure(figsize=(30,18)) # (22, 16)
+    # plt.figure(figsize=(30,18)) # (22, 16)
     heatmap = sns.heatmap(corr, vmin=-1, vmax=1, fmt='.2f', 
-        mask=mask, annot=True, cmap='BrBG')
+        mask=mask, annot=True, cmap='BrBG', ax=ax)
     heatmap.set_title('Matriz de Correlação', fontdict={'fontsize':10}, pad=12)
     
-    return send_plot()
+    return send_plot(fig)
 
 # http://localhost/graficos/tipo-acidente?var=quantidade?city=430010?tempo=semestre?tempo-ini=202103?tempo-fim=202208
 #
@@ -237,48 +244,56 @@ def correlation_matrix_heatmap_api():
 #
 @app.route('/graficos/tipo-acidente')
 def graphs_accident_type_api():
+    con = duckdb.connect('database.db')
+
     fig, ax = plt.subplots()
 
     params = extract_request_params()
     dim_cid = ('dim_cid', 'id', 'nome')
-    custom_bar_plot(ax, params, dim_cid, 'pa_cidpri')
+    custom_bar_plot(con, ax, params, dim_cid, 'pa_cidpri')
 
     ax.set_ylabel('Número de Atendimentos')
-    ax.set_title(build_plot_title(params, 'Categoria de Acidente'))
+    ax.set_title(build_plot_title(con, params, 'Categoria de Acidente'))
     ax.legend(title='Categorias de Acidente')
 
-    return send_plot()
+    return send_plot(fig)
 
 @app.route('/graficos/ocupacao')
 def graphs_ocupation_api():
+    con = duckdb.connect('database.db')
+
     fig, ax = plt.subplots()
 
     params = extract_request_params()
     dim_ocupacao = ('dim_ocupacao', 'id', 'nome')
-    custom_bar_plot(ax, params, dim_ocupacao, 'pa_cbocod')
+    custom_bar_plot(con, ax, params, dim_ocupacao, 'pa_cbocod')
 
     ax.set_ylabel('Número de Atendimentos')
-    ax.set_title(build_plot_title(params, 'Ocupação do Profissional da Saúde'))
+    ax.set_title(build_plot_title(con, params, 'Ocupação do Profissional da Saúde'))
     ax.legend(title='Ocupação')
 
-    return send_plot()
+    return send_plot(fig)
 
 @app.route('/graficos/faixa-etaria')
 def graphs_age_api():
+    con = duckdb.connect('database.db')
+
     fig, ax = plt.subplots()
 
     params = extract_request_params()
     dim_idade = ('dim_idade', 'idade', 'faixa_etaria')
-    custom_bar_plot(ax, params, dim_idade, 'pa_idade', 'faixa_etaria', True)
+    custom_bar_plot(con, ax, params, dim_idade, 'pa_idade', 'faixa_etaria', True)
 
     ax.set_ylabel('Número de Atendimentos')
-    ax.set_title(build_plot_title(params, 'Faixa-Etária'))
+    ax.set_title(build_plot_title(con, params, 'Faixa-Etária'))
     ax.legend(title='Faixa-etária')
 
-    return send_plot()
+    return send_plot(fig)
 
 @app.route('/graficos/sexo')
 def graphs_sex_api():
+    con = duckdb.connect('database.db')
+
     fig, ax = plt.subplots()
 
     params = extract_request_params()
@@ -309,13 +324,15 @@ def graphs_sex_api():
         textprops=dict(color="w"))
 
     ax.set_xlabel('Porcentagem de Atendimentos')
-    ax.set_title(build_plot_title(params, 'Sexo'))
+    ax.set_title(build_plot_title(con, params, 'Sexo'))
     ax.legend(wedges, x, title="Sexo")
 
-    return send_plot()
+    return send_plot(fig)
 
 @app.route('/predicao/acidentes')
 def predict_accidents():
+    con = duckdb.connect('database.db')
+
     statement = '''
     SELECT ano, COUNT(*) AS total_acidentes 
     FROM fato_pars 
