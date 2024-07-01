@@ -1,4 +1,4 @@
-from apidef.util.custom_plots import custom_bar_plot, build_plot_title
+from apidef.util.custom_plots import build_plot_title
 from sklearn.linear_model import LinearRegression
 import matplotlib.pyplot as plt
 import duckdb

@@ -1,4 +1,5 @@
-from apidef.util.custom_plots import custom_bar_plot, build_plot_title
+from apidef.util.custom_bar_plot import custom_bar_plot
+from apidef.util.custom_plots import build_plot_title
 import matplotlib.pyplot as plt
 import duckdb
 
