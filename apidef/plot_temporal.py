@@ -71,7 +71,6 @@ def build_temporal_plot(con, params):
             GROUP BY mes
             ORDER BY mes
             '''
-            print(statement)
 
             con.execute(statement)
 
