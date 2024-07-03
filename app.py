@@ -1,3 +1,4 @@
+from apidef.table_statistical import build_statistical_table, build_statistical_table_other
 from apidef.plot_temporal_prediction import build_temporal_prediction_plot
 from apidef.plot_accident_type import build_accident_type_plot
 from apidef.table_correlation import build_correlation_table
@@ -97,6 +98,24 @@ def correlation_table_api():
     params = extract_request_params()
 
     fig = build_correlation_table(con, params)
+
+    return send_fig(fig)
+
+@app.route('/tabelas/comparacao')
+def statistical_table_api():
+    con = duckdb.connect('database.db')
+    # params = extract_request_params()
+
+    fig = build_statistical_table(con)
+
+    return send_fig(fig)
+
+@app.route('/tabelas/comparacao_outro')
+def statistical_table_other_api():
+    con = duckdb.connect('database.db')
+    # params = extract_request_params()
+
+    fig = build_statistical_table_other(con)
 
     return send_fig(fig)
 
