@@ -19,9 +19,8 @@
         <li><a href="#sexo-title"><i class="fas fa-chart-bar"></i><span class="nav-item">Sexo</span></a></li>
         <li><a href="#tipo-acidente-title"><i class="fas fa-chart-bar"></i><span class="nav-item">Tipo de Acidente</span></a></li>
         <li><a href="#comparacao-title"><i class="fas fa-chart-bar"></i><span class="nav-item">Comparação</span></a></li>
-        <li><a href="#correlacao-title"><i class="fas fa-chart-bar"></i><span class="nav-item">Matriz de Correlação</span></a></li>
         <li><a href="#predicao-temporal-title"><i class="fas fa-chart-bar"></i><span class="nav-item">Predição Temporal</span></a></li>
-        <li><a href="" class="logout"><i class="fas fa-sign-out-alt"></i><span class="nav-item">Sair</span></a></li>
+        <li><a href="#correlacao-title"><i class="fas fa-chart-bar"></i><span class="nav-item">Matriz de Correlação</span></a></li>
       </ul>
     </nav>
 
@@ -29,7 +28,7 @@
       <!-- Temporal -->
       <div class="graph-section">
         <div class="main-top" id="temporal-title">
-          <h1 class="main-title">Temporal</h1>
+          <h1 class="main-title">Gráfico Temporal</h1>
           <i class="fas fa-window-minimize toggle-button" data-target="#temporal-content"></i>
         </div>
         <div class="main-content" id="temporal-content">
@@ -41,7 +40,7 @@
       <!-- Faixa Etária -->
       <div class="graph-section">
         <div class="main-top" id="faixa-etaria-title">
-          <h1 class="main-title">Faixa Etária</h1>
+          <h1 class="main-title">Gráfico de Faixa Etária</h1>
           <i class="fas fa-window-minimize toggle-button" data-target="#faixa-etaria-content"></i>
         </div>
         <div class="main-content" id="faixa-etaria-content">
@@ -53,7 +52,7 @@
       <!-- Ocupação -->
       <div class="graph-section">
         <div class="main-top" id="ocupacao-title">
-          <h1 class="main-title">Ocupação</h1>
+          <h1 class="main-title">Gráfico de Ocupação</h1>
           <i class="fas fa-window-minimize toggle-button" data-target="#ocupacao-content"></i>
         </div>
         <div class="main-content" id="ocupacao-content">
@@ -65,7 +64,7 @@
       <!-- Sexo -->
       <div class="graph-section">
         <div class="main-top" id="sexo-title">
-          <h1 class="main-title">Sexo</h1>
+          <h1 class="main-title">Gráfico de Sexo</h1>
           <i class="fas fa-window-minimize toggle-button" data-target="#sexo-content"></i>
         </div>
         <div class="main-content" id="sexo-content">
@@ -77,7 +76,7 @@
       <!-- Tipo de Acidente -->
       <div class="graph-section">
         <div class="main-top" id="tipo-acidente-title">
-          <h1 class="main-title">Tipo de Acidente</h1>
+          <h1 class="main-title">Gráfico de Tipo de Acidente</h1>
           <i class="fas fa-window-minimize toggle-button" data-target="#tipo-acidente-content"></i>
         </div>
         <div class="main-content" id="tipo-acidente-content">
@@ -89,12 +88,24 @@
       <!-- Comparação -->
       <div class="graph-section">
         <div class="main-top" id="comparacao-title">
-          <h1 class="main-title">Comparação</h1>
+          <h1 class="main-title">Tabela de Comparação</h1>
           <i class="fas fa-window-minimize toggle-button" data-target="#comparacao-content"></i>
         </div>
         <div class="main-content" id="comparacao-content">
           <div id="loading-comparacao">Carregando...</div>
           <img id="grafico-comparacao" class="img1" alt="Gráfico Comparação" style="display: none" />
+        </div>
+      </div>
+
+       <!-- Predição Temporal -->
+       <div class="graph-section">
+        <div class="main-top" id="predicao-temporal-title">
+          <h1 class="main-title">Gráfico de Predição Temporal</h1>
+          <i class="fas fa-window-minimize toggle-button" data-target="#predicao-temporal-content"></i>
+        </div>
+        <div class="main-content" id="predicao-temporal-content">
+          <div id="loading-predicao-temporal">Carregando...</div>
+          <img id="grafico-predicao-temporal" class="img1" alt="Gráfico Predição Temporal" style="display: none" />
         </div>
       </div>
 
@@ -107,18 +118,6 @@
         <div class="main-content" id="correlacao-content">
           <div id="loading-correlacao">Carregando...</div>
           <img id="grafico-correlacao" class="img1" alt="Gráfico Matriz de Correlação" style="display: none" />
-        </div>
-      </div>
-
-      <!-- Predição Temporal -->
-      <div class="graph-section">
-        <div class="main-top" id="predicao-temporal-title">
-          <h1 class="main-title">Predição Temporal</h1>
-          <i class="fas fa-window-minimize toggle-button" data-target="#predicao-temporal-content"></i>
-        </div>
-        <div class="main-content" id="predicao-temporal-content">
-          <div id="loading-predicao-temporal">Carregando...</div>
-          <img id="grafico-predicao-temporal" class="img1" alt="Gráfico Predição Temporal" style="display: none" />
         </div>
       </div>
     </section>
@@ -135,14 +134,14 @@
     }
 
     $(document).ready(function () {
-      carregarGrafico("#grafico-temporal", "http://localhost:5000/graficos/temporal?tipo-tempo=mensal&tempo=2023-2024&tipo-localizacao=microrregiao");
+      carregarGrafico("#grafico-temporal", "http://localhost:5000/graficos/temporal?tipo-tempo=mensal&tempo=2021-2022&tipo-localizacao=microrregiao");
       carregarGrafico("#grafico-faixa-etaria", "http://localhost:5000/graficos/faixa-etaria?top=6&tipo-localizacao=microrregiao");
       carregarGrafico("#grafico-ocupacao", "http://localhost:5000/graficos/ocupacao?top=5&tipo-localizacao=microrregiao");
       carregarGrafico("#grafico-sexo", "http://localhost:5000/graficos/sexo?tipo-localizacao=microrregiao");
       carregarGrafico("#grafico-tipo-acidente", "http://localhost:5000/graficos/tipo-acidente?tipo-localizacao=microrregiao&localizacao=431020");
       carregarGrafico("#grafico-comparacao", "http://localhost:5000/tabelas/comparacao_outro?localizacao=430300&tempo=2023");
-      carregarGrafico("#grafico-correlacao", "http://localhost:5000/tabelas/correlacao");
       carregarGrafico("#grafico-predicao-temporal", "http://localhost:5000/predicao/acidentes?tempo=2020-2022&tipo-localizacao=microrregiao");
+      carregarGrafico("#grafico-correlacao", "http://localhost:5000/tabelas/correlacao");
 
       $(".toggle-button").on("click", function () {
         const target = $(this).data("target");
