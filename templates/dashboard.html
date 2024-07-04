@@ -1,232 +1,170 @@
 <!DOCTYPE html>
-<html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <title>Dashboard</title>
-    <link rel="stylesheet" href="../static/css/styles.css" />
-    <!-- Font Awesome Cdn Link -->
-    <link
-      rel="stylesheet"
-      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css"
-    />
-    <!-- jQuery CDN -->
-    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-  </head>
-  <body>
-    <div class="container">
-      <nav>
-        <ul>
-          <!-- Index -->
-          <li>
-            <a href="./dashboard.html" class="logo">
-              <span class="nav-item">DashBoard</span>
-            </a>
-          </li>
-          <!-- Gráficos -->
-          <li>
-            <a href="#temporal">
-              <i class="fas fa-chart-bar"></i>
-              <span class="nav-item">Temporal</span>
-            </a>
-          </li>
-          <li>
-            <a href="#faixa-etaria">
-              <i class="fas fa-chart-bar"></i>
-              <span class="nav-item">Faixa Etária</span>
-            </a>
-          </li>
-          <li>
-            <a href="#ocupacao">
-              <i class="fas fa-chart-bar"></i>
-              <span class="nav-item">Ocupação</span>
-            </a>
-          </li>
-          <li>
-            <a href="#sexo">
-              <i class="fas fa-chart-bar"></i>
-              <span class="nav-item">Sexo</span>
-            </a>
-          </li>
-          <li>
-            <a href="#tipo-acidente">
-              <i class="fas fa-chart-bar"></i>
-              <span class="nav-item">Tipo de Acidente</span>
-            </a>
-          </li>
-          <li>
-            <a href="#comparacao">
-              <i class="fas fa-chart-bar"></i>
-              <span class="nav-item">Comparação</span>
-            </a>
-          </li>
-          <li>
-            <a href="#correlacao">
-              <i class="fas fa-chart-bar"></i>
-              <span class="nav-item">Matriz de Correlação</span>
-            </a>
-          </li>
-          <li>
-            <a href="#predicao-temporal">
-              <i class="fas fa-chart-bar"></i>
-              <span class="nav-item">Predição Temporal</span>
-            </a>
-          </li>
-          <!-- Log Out -->
-          <li>
-            <a href="" class="logout">
-              <i class="fas fa-sign-out-alt"></i>
-              <span class="nav-item">Sair</span>
-            </a>
-          </li>
-        </ul>
-      </nav>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <title>Dashboard</title>
+  <link rel="stylesheet" href="../static/css/styles.css" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css" />
+  <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+</head>
+<body>
+  <div class="container">
+    <nav id="sidebar">
+      <button id="sidebarToggle" class="fas fa-angle-double-left"></button>
+      <ul>
+        <li><a href="./dashboard.html" class="logo"><span class="nav-item">DashBoard</span></a></li>
+        <li><a href="#temporal-title"><i class="fas fa-chart-bar"></i><span class="nav-item">Temporal</span></a></li>
+        <li><a href="#faixa-etaria-title"><i class="fas fa-chart-bar"></i><span class="nav-item">Faixa Etária</span></a></li>
+        <li><a href="#ocupacao-title"><i class="fas fa-chart-bar"></i><span class="nav-item">Ocupação</span></a></li>
+        <li><a href="#sexo-title"><i class="fas fa-chart-bar"></i><span class="nav-item">Sexo</span></a></li>
+        <li><a href="#tipo-acidente-title"><i class="fas fa-chart-bar"></i><span class="nav-item">Tipo de Acidente</span></a></li>
+        <li><a href="#comparacao-title"><i class="fas fa-chart-bar"></i><span class="nav-item">Comparação</span></a></li>
+        <li><a href="#correlacao-title"><i class="fas fa-chart-bar"></i><span class="nav-item">Matriz de Correlação</span></a></li>
+        <li><a href="#predicao-temporal-title"><i class="fas fa-chart-bar"></i><span class="nav-item">Predição Temporal</span></a></li>
+        <li><a href="" class="logout"><i class="fas fa-sign-out-alt"></i><span class="nav-item">Sair</span></a></li>
+      </ul>
+    </nav>
 
-      <section class="main">
-        <div class="main-top" id="temporal">
+    <section class="main">
+      <!-- Temporal -->
+      <div class="graph-section">
+        <div class="main-top" id="temporal-title">
           <h1 class="main-title">Temporal</h1>
-          <i class="fas fa-user-cog"></i>
+          <i class="fas fa-window-minimize toggle-button" data-target="#temporal-content"></i>
         </div>
-        <div class="main-content">
+        <div class="main-content" id="temporal-content">
           <div id="loading-temporal">Carregando...</div>
-          <img id="grafico-temporal" class="img1" style="display: none" />
+          <img id="grafico-temporal" class="img1" alt="Gráfico Temporal" style="display: none" />
         </div>
-        <script>
-          $(document).ready(function () {
-            const $img = $("#grafico-temporal");
-            $img.on("load", function () {
-              $("#loading-temporal").hide();
-              $img.show();
-            });
-            $img.attr("src", "http://127.0.0.1:5000/graficos/temporal");
-          });
-        </script>
+      </div>
 
-        <div class="main-top" id="faixa-etaria">
+      <!-- Faixa Etária -->
+      <div class="graph-section">
+        <div class="main-top" id="faixa-etaria-title">
           <h1 class="main-title">Faixa Etária</h1>
+          <i class="fas fa-window-minimize toggle-button" data-target="#faixa-etaria-content"></i>
         </div>
-        <div class="main-content">
+        <div class="main-content" id="faixa-etaria-content">
           <div id="loading-faixa-etaria">Carregando...</div>
-          <img id="grafico-faixa-etaria" class="img1" style="display: none" />
+          <img id="grafico-faixa-etaria" class="img1" alt="Gráfico Faixa Etária" style="display: none" />
         </div>
-        <script>
-          $(document).ready(function () {
-            const $img = $("#grafico-faixa-etaria");
-            $img.on("load", function () {
-              $("#loading-faixa-etaria").hide();
-              $img.show();
-            });
-            $img.attr("src", "http://127.0.0.1:5000/graficos/faixa-etaria");
-          });
-        </script>
+      </div>
 
-        <div class="main-top" id="ocupacao">
+      <!-- Ocupação -->
+      <div class="graph-section">
+        <div class="main-top" id="ocupacao-title">
           <h1 class="main-title">Ocupação</h1>
+          <i class="fas fa-window-minimize toggle-button" data-target="#ocupacao-content"></i>
         </div>
-        <div class="main-content">
+        <div class="main-content" id="ocupacao-content">
           <div id="loading-ocupacao">Carregando...</div>
-          <img id="grafico-ocupacao" class="img1" style="display: none" />
+          <img id="grafico-ocupacao" class="img1" alt="Gráfico Ocupação" style="display: none" />
         </div>
-        <script>
-          $(document).ready(function () {
-            const $img = $("#grafico-ocupacao");
-            $img.on("load", function () {
-              $("#loading-ocupacao").hide();
-              $img.show();
-            });
-            $img.attr("src", "http://127.0.0.1:5000/graficos/ocupacao");
-          });
-        </script>
+      </div>
 
-        <div class="main-top" id="sexo">
+      <!-- Sexo -->
+      <div class="graph-section">
+        <div class="main-top" id="sexo-title">
           <h1 class="main-title">Sexo</h1>
+          <i class="fas fa-window-minimize toggle-button" data-target="#sexo-content"></i>
         </div>
-        <div class="main-content">
+        <div class="main-content" id="sexo-content">
           <div id="loading-sexo">Carregando...</div>
-          <img id="grafico-sexo" class="img1" style="display: none" />
+          <img id="grafico-sexo" class="img1" alt="Gráfico Sexo" style="display: none" />
         </div>
-        <script>
-          $(document).ready(function () {
-            const $img = $("#grafico-sexo");
-            $img.on("load", function () {
-              $("#loading-sexo").hide();
-              $img.show();
-            });
-            $img.attr("src", "http://127.0.0.1:5000/graficos/sexo");
-          });
-        </script>
+      </div>
 
-        <div class="main-top" id="tipo-acidente">
+      <!-- Tipo de Acidente -->
+      <div class="graph-section">
+        <div class="main-top" id="tipo-acidente-title">
           <h1 class="main-title">Tipo de Acidente</h1>
+          <i class="fas fa-window-minimize toggle-button" data-target="#tipo-acidente-content"></i>
         </div>
-        <div class="main-content">
+        <div class="main-content" id="tipo-acidente-content">
           <div id="loading-tipo-acidente">Carregando...</div>
-          <img id="grafico-tipo-acidente" class="img1" style="display: none" />
+          <img id="grafico-tipo-acidente" class="img1" alt="Gráfico Tipo de Acidente" style="display: none" />
         </div>
-        <script>
-          $(document).ready(function () {
-            const $img = $("#grafico-tipo-acidente");
-            $img.on("load", function () {
-              $("#loading-tipo-acidente").hide();
-              $img.show();
-            });
-            $img.attr("src", "http://127.0.0.1:5000/graficos/tipo-acidente");
-          });
-        </script>
+      </div>
 
-        <div class="main-top" id="comparacao">
+      <!-- Comparação -->
+      <div class="graph-section">
+        <div class="main-top" id="comparacao-title">
           <h1 class="main-title">Comparação</h1>
+          <i class="fas fa-window-minimize toggle-button" data-target="#comparacao-content"></i>
         </div>
-        <div class="main-content">
+        <div class="main-content" id="comparacao-content">
           <div id="loading-comparacao">Carregando...</div>
-          <img id="grafico-comparacao" class="img1" style="display: none" />
+          <img id="grafico-comparacao" class="img1" alt="Gráfico Comparação" style="display: none" />
         </div>
-        <script>
-          $(document).ready(function () {
-            const $img = $("#grafico-comparacao");
-            $img.on("load", function () {
-              $("#loading-comparacao").hide();
-              $img.show();
-            });
-            $img.attr("src", "http://127.0.0.1:5000/tabelas/comparacao");
-          });
-        </script>
+      </div>
 
-        <div class="main-top" id="correlacao">
+      <!-- Matriz de Correlação -->
+      <div class="graph-section">
+        <div class="main-top" id="correlacao-title">
           <h1 class="main-title">Matriz de Correlação</h1>
+          <i class="fas fa-window-minimize toggle-button" data-target="#correlacao-content"></i>
         </div>
-        <div class="main-content">
+        <div class="main-content" id="correlacao-content">
           <div id="loading-correlacao">Carregando...</div>
-          <img id="grafico-correlacao" class="img1" style="display: none" />
+          <img id="grafico-correlacao" class="img1" alt="Gráfico Matriz de Correlação" style="display: none" />
         </div>
-        <script>
-          $(document).ready(function () {
-            const $img = $("#grafico-correlacao");
-            $img.on("load", function () {
-              $("#loading-correlacao").hide();
-              $img.show();
-            });
-            $img.attr("src", "http://127.0.0.1:5000/tabelas/correlacao");
-          });
-        </script>
+      </div>
 
-        <div class="main-top" id="predicao-temporal">
+      <!-- Predição Temporal -->
+      <div class="graph-section">
+        <div class="main-top" id="predicao-temporal-title">
           <h1 class="main-title">Predição Temporal</h1>
+          <i class="fas fa-window-minimize toggle-button" data-target="#predicao-temporal-content"></i>
         </div>
-        <div class="main-content">
+        <div class="main-content" id="predicao-temporal-content">
           <div id="loading-predicao-temporal">Carregando...</div>
-          <img id="grafico-predicao-temporal" class="img1" style="display: none" />
+          <img id="grafico-predicao-temporal" class="img1" alt="Gráfico Predição Temporal" style="display: none" />
         </div>
-        <script>
-          $(document).ready(function () {
-            const $img = $("#grafico-predicao-temporal");
-            $img.on("load", function () {
-              $("#loading-predicao-temporal").hide();
-              $img.show();
-            });
-            $img.attr("src", "http://127.0.0.1:5000/predicoes/temporal");
-          });
-        </script>
-      </section>
-    </div>
-  </body>
+      </div>
+    </section>
+  </div>
+
+  <script>
+    function carregarGrafico(id, url) {
+      const $img = $(id);
+      $img.on("load", function () {
+        $(`#loading-${id.split('#grafico-')[1]}`).hide();
+        $img.show();
+      });
+      $img.attr("src", url);
+    }
+
+    $(document).ready(function () {
+      carregarGrafico("#grafico-temporal", "http://localhost:5000/graficos/temporal?tipo-tempo=mensal&tempo=2023-2024&tipo-localizacao=microrregiao");
+      carregarGrafico("#grafico-faixa-etaria", "http://localhost:5000/graficos/faixa-etaria?top=6&tipo-localizacao=microrregiao");
+      carregarGrafico("#grafico-ocupacao", "http://localhost:5000/graficos/ocupacao?top=5&tipo-localizacao=microrregiao");
+      carregarGrafico("#grafico-sexo", "http://localhost:5000/graficos/sexo?tipo-localizacao=microrregiao");
+      carregarGrafico("#grafico-tipo-acidente", "http://localhost:5000/graficos/tipo-acidente?tipo-localizacao=cidade&localizacao=431020");
+      carregarGrafico("#grafico-comparacao", "http://localhost:5000/tabelas/comparacao_outro?localizacao=430300&tempo=2023");
+      carregarGrafico("#grafico-correlacao", "http://localhost:5000/tabelas/correlacao");
+      carregarGrafico("#grafico-predicao-temporal", "http://localhost:5000/predicao/acidentes?tempo=2020-2022&tipo-localizacao=microrregiao");
+
+      $(".toggle-button").on("click", function () {
+        const target = $(this).data("target");
+        $(target).toggle();
+        const icon = $(this).hasClass("fa-window-minimize") ? "fa-window-maximize" : "fa-window-minimize";
+        $(this).toggleClass("fa-window-minimize fa-window-maximize");
+      });
+
+      $("nav a").on("click", function (event) {
+        event.preventDefault();
+        const sectionId = $(this).attr("href");
+        $("html, body").animate({
+          scrollTop: $(sectionId).offset().top
+        }, 500);
+      });
+
+      $("#sidebarToggle").on("click", function () {
+        $("#sidebar").toggleClass("collapsed");
+        const icon = $(this).hasClass("fa-angle-double-left") ? "fa-angle-double-right" : "fa-angle-double-left";
+        $(this).toggleClass("fa-angle-double-left fa-angle-double-right");
+      });
+    });
+  </script>
+</body>
 </html>
