@@ -1,6 +1,7 @@
 from apidef.util.custom_plots import *
 import matplotlib.pyplot as plt
 from flask import request
+import numpy as np
 import duckdb
 
 # ?tipo-tempo=mensal/anual
@@ -53,7 +54,13 @@ def build_temporal_plot(con, params):
         x = list(unzipped[0])
         y = list(unzipped[1])
 
-        ax.plot(x, y, label=f'{time}')
+        plotted = ax.plot(x, y, label=f'{time}')
+
+        # Linha de tendencia central
+        X = np.arange(len(x))
+        z = np.poly1d(np.polyfit(X, y, 1))
+        ax.plot(x, z(X), '--', label=f'Tendência: {year}', 
+            alpha=0.6, color=plotted[0].get_color())
     elif time_type == 'mensal':
         first, last = tuple(time.split('-'))
         for year in range(int(first), int(last) + 1):
@@ -92,11 +99,17 @@ def build_temporal_plot(con, params):
             # x = list(map(lambda ym: ym[ym.find('/')+1:], list(unzipped[0])))
             x = list(map(lambda m: months[int(m) - 1], x))
 
-            ax.plot(x, y, label=f'{year}')
+            plotted = ax.plot(x, y, label=f'{year}')
+
+            # Linha de tendencia central
+            X = np.arange(len(x))
+            z = np.poly1d(np.polyfit(X, y, 1))
+            ax.plot(x, z(X), '--', label=f'Tendência: {year}', 
+                alpha=0.6, color=plotted[0].get_color())
 
     ax.set_ylabel('Número de Atendimentos')
     ax.set_xlabel('Mês')
     ax.set_title(build_plot_title(con, params, 'Ano'))
-    ax.legend(title='Anos')
+    ax.legend()
 
     return fig

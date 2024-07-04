@@ -75,10 +75,15 @@ def style_table(table):
         # First column
         elif col == 0:
             cell.set_text_props(fontweight='bold')
-            cell.set(facecolor='grey')
+            if row > 0 and row <= 2:
+                cell.set(facecolor='powderblue')
+            elif row > 2 and row <= 5:
+                cell.set(facecolor='thistle')
+            else:
+                cell.set(facecolor='palegoldenrod')
 
-        # Second column
-        elif col == 2:
+        # Second column, color metrics as good or bad
+        elif col == 2 and row <= 5:
             val = float(cell.get_text().get_text())
             left_val = float(table[row, col - 1].get_text().get_text())
             if val <= left_val:
@@ -86,6 +91,45 @@ def style_table(table):
             else:
                 cell.set_text_props(color='red')
 
+        # Put % in CV
+        if col > 0 and row == 8:
+            val = float(cell.get_text().get_text())
+            cell.set_text_props(text=f'{val:.2f}%')
+
+def gen_metrics(df, col):
+    metrics = df[col].describe()
+
+    mn = metrics['min']
+    mx = metrics['max']
+
+    mean   = metrics['mean']
+    median = metrics['50%']
+    mode   = df[col].mode().iloc[0]
+
+    var = df[col].var()
+    std = metrics['std']
+    cv  = (std / mean) * 100
+
+    return [mn, mx, mean, median, mode, var, std, cv]
+
+def build_comparative_df(df_a, name_a, df_b, name_b, col):
+    metrics_a = gen_metrics(df_a, col)
+    metrics_b = gen_metrics(df_b, col)
+
+    # Exibição das métricas
+    comparative_df = pd.DataFrame({
+        'Métricas': ['Mínimo', 'Máximo', 'Média', 'Mediana', 'Moda', 'Variância', 'Desvio Padrão', 'CV'],
+        name_a: metrics_a,
+        name_b: metrics_b
+    })
+
+    # Formatar os valores para 2 casas decimais
+    comparative_df[name_a] = comparative_df[name_a].round(2)
+    comparative_df[name_b] = comparative_df[name_b].round(2)
+
+    return comparative_df
+
+import duckdb
 def build_statistical_table(con):
     time_type, time, loc = extract_request_statistical_params()
 
@@ -93,42 +137,23 @@ def build_statistical_table(con):
     pop_Ijui = 83000
     parcela_pop = 100000
 
-    # Cálculo das métricas para o estado
+    # con_1 = duckdb.connect('database.db')
     acidentes_RS = population_df(con, time_type, time)
     acidentes_RS['Quantidade_Acidentes'] = (acidentes_RS['Quantidade_Acidentes'] / pop_RS) * parcela_pop
-    metricas_RS = acidentes_RS['Quantidade_Acidentes'].describe()
-    variancia_RS = acidentes_RS['Quantidade_Acidentes'].var()
 
-    # Cálculo das métricas para a microrregião de Ijuí
+    # con_1 = duckdb.connect('database.db')
     acidentes_Ijui = sample_df(con, time_type, time, loc)
     acidentes_Ijui['Quantidade_Acidentes'] = (acidentes_Ijui['Quantidade_Acidentes'] / pop_Ijui) * parcela_pop
-    metricas_Ijui = acidentes_Ijui['Quantidade_Acidentes'].describe()
-    variancia_Ijui = acidentes_Ijui['Quantidade_Acidentes'].var()
 
-    # Exibição das métricas
-    metricas_estatisticas = pd.DataFrame({
-        'Métrica': ['Média', 'Mediana', 'Desvio Padrão', 'Variância', 'Máximo', 'Mínimo'],
-        'RS': [
-            metricas_RS['mean'], metricas_RS['50%'], metricas_RS['std'], 
-            variancia_RS, metricas_RS['max'], metricas_RS['min']
-        ],
-        'Ijuí': [
-            metricas_Ijui['mean'], metricas_Ijui['50%'], metricas_Ijui['std'], 
-            variancia_Ijui, metricas_Ijui['max'], metricas_Ijui['min']
-        ]
-    })
-
-    # Formatar os valores para 2 casas decimais
-    metricas_estatisticas['RS'] = metricas_estatisticas['RS'].round(2)
-    metricas_estatisticas['Ijuí'] = metricas_estatisticas['Ijuí'].round(2)
+    df = build_comparative_df(acidentes_RS, 'RS', acidentes_Ijui, 'Ijuí', 'Quantidade_Acidentes')
 
     # print(metricas_estatisticas)
     fig, ax = plt.subplots() # figsize=(10, 4))
 
-    table = ax.table(cellText=metricas_estatisticas.values,
+    table = ax.table(cellText=df.values,
         # rowLabels=metricas_estatisticas['Métrica'], 
         # colLabels=metricas_estatisticas[['RS', 'Ijui']].columns,
-        colLabels=metricas_estatisticas.columns,
+        colLabels=df.columns,
         cellLoc='center', colLoc='center', rowLoc='center', loc='center')
 
     style_table(table)
@@ -137,7 +162,7 @@ def build_statistical_table(con):
     ax.axis('off')
     ax.set_title(f'''Análise de Variância Proporcional da Quantidade Mensal de
 Acidentes por 100.000 Habitantes no Ano de {time}:
-Comparação entre o Rio Grande do Sul e a Cidade de Ijuí''', y = 0.675)
+Comparação entre o Rio Grande do Sul e a Cidade de Ijuí''', y = 0.7)
 
     return fig
 
@@ -150,51 +175,29 @@ def build_statistical_table_other(con):
 
     nome_outro = get_city_name(con, loc) # 'Cachoeira do Sul'
     cod_outro = loc # '430300'
-
-    # Cálculo das métricas para o estado
-    acidentes_Outro = sample_df(con, time_type, time, cod_outro)
+    acidentes_outro = sample_df(con, time_type, time, cod_outro)
     # acidentes_Outro['Quantidade_Acidentes'] = (acidentes_Outro['Quantidade_Acidentes'] / pop_RS) * parcela_pop
-    metricas_Outro = acidentes_Outro['Quantidade_Acidentes'].describe()
-    variancia_Outro = acidentes_Outro['Quantidade_Acidentes'].var()
 
-    # Cálculo das métricas para a microrregião de Ijuí
-    acidentes_Ijui = sample_df(con, time_type, time, '431020')
+    acidentes_ijui = sample_df(con, time_type, time, '431020')
     # acidentes_Ijui['Quantidade_Acidentes'] = (acidentes_Ijui['Quantidade_Acidentes'] / pop_Ijui) * parcela_pop
-    metricas_Ijui = acidentes_Ijui['Quantidade_Acidentes'].describe()
-    variancia_Ijui = acidentes_Ijui['Quantidade_Acidentes'].var()
 
-    # Exibição das métricas
-    metricas_estatisticas = pd.DataFrame({
-        'Métrica': ['Média', 'Mediana', 'Desvio Padrão', 'Variância', 'Máximo', 'Mínimo'],
-        nome_outro: [
-            metricas_Outro['mean'], metricas_Outro['50%'], metricas_Outro['std'], 
-            variancia_Outro, metricas_Outro['max'], metricas_Outro['min']
-        ],
-        'Ijuí': [
-            metricas_Ijui['mean'], metricas_Ijui['50%'], metricas_Ijui['std'], 
-            variancia_Ijui, metricas_Ijui['max'], metricas_Ijui['min']
-        ]
-    })
-
-    # Formatar os valores para 2 casas decimais
-    metricas_estatisticas[nome_outro] = metricas_estatisticas[nome_outro].round(2)
-    metricas_estatisticas['Ijuí'] = metricas_estatisticas['Ijuí'].round(2)
+    df = build_comparative_df(acidentes_outro, nome_outro, acidentes_ijui, 'Ijuí', 'Quantidade_Acidentes')
 
     # print(metricas_estatisticas)
     fig, ax = plt.subplots() # figsize=(10, 4))
 
-    table = ax.table(cellText=metricas_estatisticas.values,
+    table = ax.table(cellText=df.values,
         # rowLabels=metricas_estatisticas['Métrica'], 
         # colLabels=metricas_estatisticas[['RS', 'Ijui']].columns,
-        colLabels=metricas_estatisticas.columns,
+        colLabels=df.columns,
         cellLoc='center', colLoc='center', rowLoc='center', loc='center')
 
     style_table(table)
 
     ax.axis('tight')
     ax.axis('off')
-    ax.set_title(f'''Análise de Variância da Quantidade Mensal de Acidentes no Ano
-de {time}: Comparação entre as Cidades de {nome_outro} e Ijuí''', y = 0.675)
+    ax.set_title(f'''Análise Estatística da Quantidade Mensal de Acidentes no Ano
+de {time}: Comparação entre as Cidades de {nome_outro} e Ijuí''', y = 0.7)
 
     return fig
 

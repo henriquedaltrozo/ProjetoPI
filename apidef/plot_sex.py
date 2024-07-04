@@ -11,8 +11,8 @@ def build_sex_plot(con, params):
     statement = f'''
     SELECT pa_sexo, {qtd_val_sql} AS apr 
     FROM fato_pars 
-    {loc_sql}
     JOIN dim_localizacao ON mun_id = pa_munpcn 
+    {loc_sql}
     GROUP BY pa_sexo
     ORDER BY apr DESC 
     LIMIT {top}
