@@ -180,9 +180,9 @@ def temporal_plot_api():
 @app.route('/predicao/acidentes')
 def temporal_prediction_plot_api():
     con = duckdb.connect('database.db')
-    params = extract_request_params()
+    # params = extract_request_params()
 
-    fig = build_temporal_prediction_plot(con, params)
+    fig = build_temporal_prediction_plot(con)
 
     return send_fig(fig)
 
