@@ -1,5 +1,5 @@
+from apidef.plot_temporal_prediction import build_temporal_prediction_plot, build_pdt_test_plot
 from apidef.table_statistical import build_statistical_table, build_statistical_table_other
-from apidef.plot_temporal_prediction import build_temporal_prediction_plot
 from apidef.plot_accident_type import build_accident_type_plot
 from apidef.table_correlation import build_correlation_table
 from apidef.plot_occupation import build_occupation_plot
@@ -183,6 +183,15 @@ def temporal_prediction_plot_api():
     # params = extract_request_params()
 
     fig = build_temporal_prediction_plot(con)
+
+    return send_fig(fig)
+
+@app.route('/predicao/teste')
+def temporal_prediction_plot_test_api():
+    con = duckdb.connect('database.db')
+    # params = extract_request_params()
+
+    fig = build_pdt_test_plot(con)
 
     return send_fig(fig)
 

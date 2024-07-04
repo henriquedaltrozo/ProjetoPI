@@ -1,11 +1,13 @@
 from statsmodels.tsa.holtwinters import SimpleExpSmoothing
 from statsmodels.tsa.arima.model import ARIMA
 from apidef.util.custom_plots import get_city_name
+import matplotlib.ticker as plticker
 from pmdarima import auto_arima
 import matplotlib.pyplot as plt
 from flask import request
 import pandas as pd
 import numpy as np
+import matplotlib
 import duckdb
 
 # ?tipo-tempo=mensal/anual
@@ -14,8 +16,8 @@ def extract_request_loc_params():
     # time_type = request.args.get('tipo-tempo')
     # time_type = time_type if time_type != None else 'anual'
 
-    # time = request.args.get('tempo')
-    # time = time if time != None else '2016-2024'
+    time = request.args.get('tempo')
+    time = time if time != None else '2020-2024'
 
     loc_type = request.args.get('tipo-localizacao')
     loc_type = loc_type if loc_type != None else 'estado'
@@ -23,14 +25,22 @@ def extract_request_loc_params():
     loc = request.args.get('localizacao')
     loc = loc if loc != None else '431020'
 
-    return loc_type, loc
+    return time, loc_type, loc
 
-def total_monthly_df(con):
+def total_monthly_df(con, loc_type, loc):
+    where_sql = ''
+    if loc_type == 'cidade':
+        where_sql = f'WHERE mun_id = {loc}'
+    elif loc_type == 'microrregiao':
+        where_sql = f'WHERE mic_id = {loc}'
+
     statement = f'''
     SELECT ano, mes, c as Quantidade_Acidentes 
     FROM (
         SELECT pa_cmp, COUNT(*) as c
         FROM fato_pars 
+        JOIN dim_localizacao ON mun_id = pa_munpcn 
+        {where_sql}
         GROUP BY pa_cmp
     ) 
     JOIN dim_tempo ON pa_cmp = id 
@@ -39,8 +49,41 @@ def total_monthly_df(con):
 
     return con.execute(statement).df()
 
-def build_pdt_test_plot(con, params):
-    df = total_monthly_df(con)
+def build_my_little_title(con, loc_type, loc):
+    city_name = get_city_name(con, loc)
+
+    loc_str = ''
+    if loc_type == 'cidade':
+        loc_str = f'na Cidade de {city_name} - RS'
+    elif loc_type == 'microrregiao':
+        loc_str = f'na Microrregião de {city_name} - RS'
+    elif loc_type == 'estado':
+        loc_str = f'no Estado do Rio Grande do Sul'
+
+    title =   'Modelo Preditivo e Média Móvel da Quantidade de Atendimentos\n'
+    title += f'Relacionados a Acidentes de Trânsito {loc_str}'
+
+    return title
+
+def fill_gaps(df):
+    df_fix = { 'ano': [], 'mes': [], 'Quantidade_Acidentes': [] }
+    for mes in range(1, 13):
+        for ano in range(df['ano'].min(), df['ano'].max() + 1): # ignore 2024
+            df_ano = df[df['ano'] == ano]
+            if df_ano[df_ano['mes'] == mes].empty:
+                df_fix['ano'].append(int(ano))
+                df_fix['mes'].append(int(mes))
+                df_fix['Quantidade_Acidentes'].append(int(0))
+
+    if not df_fix['ano']:
+        return df
+    
+    return pd.concat([df, pd.DataFrame(df_fix)])
+
+def build_pdt_test_plot(con):
+    time, loc_type, loc = extract_request_loc_params()
+
+    df = total_monthly_df(con, loc_type, loc)
     df = df[df['ano'] >= 2020]
 
     # Criação da coluna de período
@@ -58,11 +101,13 @@ def build_pdt_test_plot(con, params):
     pr = range(1, 6)
     dr = range(1, 6)
     qr = range(6, 8)
+    nrows = (pr[-1] + 1 - pr[0]) * (dr[-1] + 1 - dr[0]) * (qr[-1] + 1 - qr[0])
+    print(nrows)
 
     fig, ax = plt.subplots(
-        figsize=(10, 30), 
-        nrows=(pr[-1] - pr[0]) * (dr[-1] - dr[0]) * (qr[-1] - qr[0])
-    )
+        figsize=(10, 300), 
+        nrows=nrows
+    ) 
 
     # Aplicar o modelo ARIMA para fazer previsões
     # Ajustar o modelo ARIMA (Ajuste de parâmetros p, d, q conforme necessário)
@@ -90,27 +135,20 @@ def build_pdt_test_plot(con, params):
 
     return fig
 
-def build_my_little_title(con, loc_type, loc):
-    city_name = get_city_name(con, loc)
-
-    loc_str = ''
-    if loc_type == 'cidade':
-        loc_str = f'na Cidade de {city_name} - RS'
-    elif loc_type == 'microrregiao':
-        loc_str = f'na Microrregião de {city_name} - RS'
-    elif loc_type == 'estado':
-        loc_str = f'no Estado do Rio Grande do Sul'
-
-    title =   'Modelo Preditivo e Média Móvel da Quantidade de Atendimentos\n'
-    title += f'Relacionados a Acidentes de Trânsito {loc_str}'
-
-    return title
-
 def build_temporal_prediction_plot(con):
-    loc_type, loc = extract_request_loc_params()
+    time, loc_type, loc = extract_request_loc_params()
+    begin, end = time.split('-')
+    begin = int(begin)
+    end = int(end)
 
-    df = total_monthly_df(con)
-    df = df[df['ano'] >= 2020]
+    df = total_monthly_df(con, loc_type, loc)
+    df = df[df['ano'] >= begin]
+    df = df.drop(df[df['ano'] > end].index)
+
+    if loc_type != 'estado':
+        df = fill_gaps(df)
+    # print(fix_df[fix_df['ano'] == 2023])
+    # print(df)
 
     # Criação da coluna de período
     df['Periodo'] = df['ano'].astype(str) + '-' + df['mes'].astype(str).str.zfill(2)
@@ -146,11 +184,12 @@ def build_temporal_prediction_plot(con):
     fig, ax = plt.subplots() # figsize=(15, 10))
 
     # Plotar os dados históricos, a média móvel e a predição
-    ax.plot(df.index, df['Quantidade_Acidentes'], label='Dados Históricos')
+    ax.plot(df.index, df['Quantidade_Acidentes'], label=f'Dados Históricos ({begin} - {end})')
     ax.plot(df.index, df['MA_3'], label='Média Móvel (3 meses)', linestyle='--')
     ax.plot(forecast.index, forecast, label='Previsões', linestyle='--', marker='.')
 
-    ax.set_xlabel('Período')
+    # ax.set_xlabel('Período')
+    ax.tick_params(axis='x', labelrotation=-25)
     ax.set_ylabel('Quantidade de Acidentes')
     ax.set_title(build_my_little_title(con, loc_type, loc))
     ax.legend()
