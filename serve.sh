@@ -4,7 +4,7 @@ if [ ! -d "venv" ]; then
     echo "Criando venv..."
 
     python3 -m venv venv
-    ./venv/bin/pip install flask matplotlib numpy duckdb pandas seaborn scikit-learn
+    ./venv/bin/pip install flask matplotlib numpy duckdb pandas seaborn scikit-learn statsmodels pmdarima
 fi
 
 # export FLASK_APP=src/app.py
